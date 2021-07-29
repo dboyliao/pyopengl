@@ -3,13 +3,18 @@
 We keep rewriting functions as the main entry points change,
 so let's just localise the changes here...
 """
-import ctypes, logging, os, sys
+import ctypes
+import logging
+import os
+import sys
+
 _log = logging.getLogger( 'OpenGL.platform.ctypesloader' )
 #_log.setLevel( logging.DEBUG )
 ctypes_version = [
     int(x) for x in ctypes.__version__.split('.')
 ]
 from ctypes import util
+
 import OpenGL
 
 DLL_DIRECTORY = os.path.join( os.path.dirname( OpenGL.__file__ ), 'DLLS' )
@@ -32,6 +37,8 @@ def loadLibrary( dllType, name, mode = ctypes.RTLD_GLOBAL ):
         dllType = dllType._dlltype
     if sys.platform.startswith('linux'):
         return _loadLibraryPosix(dllType, name, mode)
+    elif sys.platform == 'darwin':
+        return _loadLibraryDarwin(dllType, name, mode)
     else:
         return _loadLibraryWindows(dllType, name, mode)
 
@@ -68,6 +75,11 @@ def _loadLibraryPosix(dllType, name, mode):
             err = current_err
     
     _log.info('''Failed to load library ( %r ): %s''', filename, err or 'No filenames available to guess?')
+
+def _loadLibraryDarwin(dllType, name, mode):
+    fullname = '/System/Library/Frameworks/{name}.framework/{name}'.format(name=name)
+    return dllType(fullname, mode)
+
 
 def _loadLibraryWindows(dllType, name, mode):
     """Load a given library for Windows systems
